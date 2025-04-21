@@ -46,22 +46,24 @@
       font-size: 2.5rem;
       animation: pop 0.4s ease-out;
     }
+    #studentID {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: #666;
+    }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
-    ruby rt {
-      font-size: 0.6em;
-      color: #888;
-    }
   </style>
 </head>
 <body>
-  <h1> 抽題囉</h1>
+  <h1>抽題囉</h1>
   <div class="controls">
     <button onclick="setMode('easy')">簡易版</button>
     <button onclick="setMode('hard')">困難版</button>
   </div>
+  <div id="studentID">學生編號：1</div>
   <div class="result" id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
@@ -69,20 +71,26 @@
   <script>
     const colors = ["粉紅", "綠", "藍", "黃", "紫"];
     const flowerImageMap = {
-  "粉紅": "粉紅.png",
-  "綠": "綠.png",
-  "藍": "藍.png",
-  "黃": "黃.png",
-  "紫": "紫.png"
-};
+      "粉紅": "images/粉紅.png",
+      "綠": "images/綠.png",
+      "藍": "images/藍.png",
+      "黃": "images/黃.png",
+      "紫": "images/紫.png"
+    };
 
     let mode = "easy";
+    let currentID = 1;
 
     function setMode(newMode) {
+      if (currentID > 200) {
+        alert("已達學生上限！");
+        return;
+      }
       mode = newMode;
       draw();
+      document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+      currentID++;
     }
-    
 
     function getRandomItem(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
@@ -95,26 +103,24 @@
       flowerDisplay.innerHTML = "";
 
       if (mode === "easy") {
-        const count = Math.floor(Math.random() * 3) + 3; // 3~5
+        const count = Math.floor(Math.random() * 3) + 3;
         const color = getRandomItem(colors);
         const sentence = `${count}朵${color}花`;
         resultText.innerText = sentence;
 
         for (let i = 0; i < count; i++) {
-          const span = document.createElement("span");
           const img = document.createElement("img");
-            img.src = flowerImageMap[color];
-            img.alt = `${color}花`;
-            img.style.width = "80px";
-            img.style.margin = "0 5px";
-            flowerDisplay.appendChild(img);
-            resultText.innerText = sentence;
+          img.src = flowerImageMap[color];
+          img.alt = `${color}花`;
+          img.style.width = "80px";
+          img.style.margin = "0 5px";
+          flowerDisplay.appendChild(img);
         }
 
       } else if (mode === "hard") {
         const combo = {};
         const colorChoices = [...colors];
-        const colorCount = Math.floor(Math.random() * 2) + 2; // 2 or 3
+        const colorCount = Math.floor(Math.random() * 2) + 2;
         let total = 0;
 
         while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
@@ -129,12 +135,11 @@
         const parts = [];
         for (const [color, count] of Object.entries(combo)) {
           parts.push(`${count}朵${color}花`);
-          resultText.innerText = parts.join("＋");
         }
+        resultText.innerText = parts.join("＋");
 
         for (const [color, count] of Object.entries(combo)) {
           for (let i = 0; i < count; i++) {
-            const span = document.createElement("span");
             const img = document.createElement("img");
             img.src = flowerImageMap[color];
             img.alt = `${color}花`;
