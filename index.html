@@ -50,20 +50,6 @@
       font-size: 1.2rem;
       color: #666;
     }
-    #recordTable {
-      margin-top: 2rem;
-      border-collapse: collapse;
-      width: 100%;
-      max-width: 600px;
-    }
-    #recordTable th, #recordTable td {
-      border: 1px solid #ccc;
-      padding: 8px 10px;
-      text-align: center;
-    }
-    #recordTable th {
-      background-color: #fce4ec;
-    }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -166,46 +152,20 @@
         }
       }
 
-      const timestamp = new Date().toISOString();
-      const data = {
-        id: currentID,
-        mode: mode,
-        description: description,
-        time: timestamp
-      };
+      // 資料傳送（以表單格式傳給 Apps Script）
+      const formData = new URLSearchParams();
+      formData.append("id", currentID);
+      formData.append("content", description);
+      formData.append("mode", mode);
 
       fetch(scriptURL, {
         method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
+        body: formData
       });
 
       document.getElementById("studentID").innerText = `學生編號：${currentID}`;
       currentID++;
-      loadRecords();
     }
-
-    async function loadRecords() {
-      try {
-        const res = await fetch(scriptURL);
-        const records = await res.json();
-        const body = document.getElementById("recordBody");
-        body.innerHTML = "";
-
-        records.forEach(rec => {
-          const row = document.createElement("tr");
-          row.innerHTML = `<td>${rec.id}</td><td>${rec.mode}</td><td>${rec.description}</td><td>${rec.time}</td>`;
-          body.appendChild(row);
-        });
-      } catch (e) {
-        console.error("讀取紀錄失敗：", e);
-      }
-    }
-
-    loadRecords();
   </script>
 </body>
 </html>
