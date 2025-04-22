@@ -11,9 +11,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
+      justify-content: flex-start;
+      padding: 2rem;
     }
     h1 {
       margin-top: 0;
@@ -51,6 +50,20 @@
       font-size: 1.2rem;
       color: #666;
     }
+    #recordTable {
+      margin-top: 2rem;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 600px;
+    }
+    #recordTable th, #recordTable td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    #recordTable th {
+      background-color: #fce4ec;
+    }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -68,18 +81,32 @@
   <div class="flowers" id="flowerDisplay"></div>
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
+  <table id="recordTable">
+    <thead>
+      <tr>
+        <th>學生編號</th>
+        <th>模式</th>
+        <th>題目</th>
+        <th>時間</th>
+      </tr>
+    </thead>
+    <tbody id="recordBody"></tbody>
+  </table>
+
   <script>
     const colors = ["粉紅", "綠", "藍", "黃", "紫"];
     const flowerImageMap = {
-     "粉紅": "粉紅.png",
-     "綠": "綠.png",
-     "藍": "藍.png",
-     "黃": "黃.png",
-     "紫": "紫.png"
+      "粉紅": "images/粉紅.png",
+      "綠": "images/綠.png",
+      "藍": "images/藍.png",
+      "黃": "images/黃.png",
+      "紫": "images/紫.png"
     };
 
     let mode = "easy";
     let currentID = 1;
+
+    const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
     function setMode(newMode) {
       if (currentID > 200) {
@@ -88,8 +115,6 @@
       }
       mode = newMode;
       draw();
-      document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-      currentID++;
     }
 
     function getRandomItem(arr) {
@@ -102,11 +127,13 @@
       const flowerDisplay = document.getElementById("flowerDisplay");
       flowerDisplay.innerHTML = "";
 
+      let description = "";
+
       if (mode === "easy") {
         const count = Math.floor(Math.random() * 3) + 3;
         const color = getRandomItem(colors);
-        const sentence = `${count}朵${color}花`;
-        resultText.innerText = sentence;
+        description = `${count}朵${color}花`;
+        resultText.innerText = description;
 
         for (let i = 0; i < count; i++) {
           const img = document.createElement("img");
@@ -117,7 +144,7 @@
           flowerDisplay.appendChild(img);
         }
 
-      } else if (mode === "hard") {
+      } else {
         const combo = {};
         const colorChoices = [...colors];
         const colorCount = Math.floor(Math.random() * 2) + 2;
@@ -136,7 +163,8 @@
         for (const [color, count] of Object.entries(combo)) {
           parts.push(`${count}朵${color}花`);
         }
-        resultText.innerText = parts.join("＋");
+        description = parts.join("＋");
+        resultText.innerText = description;
 
         for (const [color, count] of Object.entries(combo)) {
           for (let i = 0; i < count; i++) {
@@ -149,7 +177,47 @@
           }
         }
       }
+
+      const timestamp = new Date().toISOString();
+      const data = {
+        id: currentID,
+        mode: mode,
+        description: description,
+        time: timestamp
+      };
+
+      fetch(scriptURL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+
+      document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+      currentID++;
+      loadRecords();
     }
+
+    async function loadRecords() {
+      try {
+        const res = await fetch(scriptURL);
+        const records = await res.json();
+        const body = document.getElementById("recordBody");
+        body.innerHTML = "";
+
+        records.forEach(rec => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${rec.id}</td><td>${rec.mode}</td><td>${rec.description}</td><td>${rec.time}</td>`;
+          body.appendChild(row);
+        });
+      } catch (e) {
+        console.error("讀取紀錄失敗：", e);
+      }
+    }
+
+    loadRecords();
   </script>
 </body>
 </html>
