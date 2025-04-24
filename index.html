@@ -62,9 +62,10 @@
     <button onclick="setMode('easy')">簡易版</button>
     <button onclick="setMode('hard')">困難版</button>
   </div>
-  <div id="studentID">學生編號：讀取中...</div>
+  <div id="studentID">學生編號：1</div>
   <div class="result" id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
+  <button id="resetBtn" style="display:none; margin-top:1rem;" onclick="resetID()">🔁 重置學生編號</button>
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
   <script>
@@ -78,23 +79,15 @@
     };
 
     let mode = "easy";
-    let currentID = 1;
+    let currentID = parseInt(localStorage.getItem("studentID") || "1");
 
     const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
-    async function init() {
-      try {
-        const res = await fetch(scriptURL);
-        const data = await res.json();
-        currentID = data.lastId + 1;
-        document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-      } catch (e) {
-        console.error("無法取得最新學生編號", e);
-        document.getElementById("studentID").innerText = `學生編號：錯誤`;
-      }
-    }
-
     function setMode(newMode) {
+      if (currentID > 200) {
+        alert("已達學生上限！");
+        return;
+      }
       mode = newMode;
       draw();
     }
@@ -177,11 +170,33 @@
         body: JSON.stringify(data)
       });
 
-      // 鎖定編號不再變動
       document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+      currentID++;
+      localStorage.setItem("studentID", currentID);
     }
 
-    window.onload = init;
+    function resetID() {
+      const confirm1 = confirm("⚠️ 確定要重置學生編號？");
+      if (!confirm1) return;
+
+      const code = prompt("請輸入驗證碼：987");
+      if (code === "987") {
+        localStorage.removeItem("studentID");
+        alert("✅ 已重置，下次開啟將從1開始！");
+        location.reload();
+      } else {
+        alert("驗證失敗，未重置。");
+      }
+    }
+
+    window.onload = function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("admin") === "true") {
+        document.getElementById("resetBtn").style.display = "inline-block";
+      }
+
+      document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+    }
   </script>
 </body>
 </html>
