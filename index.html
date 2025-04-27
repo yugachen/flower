@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>花朵抽題器</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>花朵抽題器（最終修正版v2）</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -15,21 +14,30 @@
       justify-content: flex-start;
       padding: 2rem;
     }
-    h1 {
+    #titleZhuyin {
+      display: flex;
+      justify-content: center;
       margin-top: 0;
-      color: #444;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .controls {
       margin: 1rem;
+      display: flex;
+      gap: 1rem;
     }
     button {
       padding: 0.6rem 1rem;
-      margin: 0.5rem;
       font-size: 1.1rem;
       border: none;
       border-radius: 20px;
       cursor: pointer;
       transition: all 0.3s ease;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
     }
     button:hover {
       opacity: 0.9;
@@ -38,173 +46,325 @@
       background-color: #FF5151;
       color: white;
     }
-    button.hard:hover {
-      background-color: #e14040;
-    }
     button.easy {
       background-color: #ffccdd;
+      color: black;
     }
-    button.easy:hover {
-      background-color: #ffaacc;
-    }
-    .result {
-      text-align: center;
+    .result, #studentID {
       margin-top: 1.5rem;
       font-size: 1.5rem;
       color: #333;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
     }
     .flowers {
       margin-top: 1rem;
       font-size: 2.5rem;
       animation: pop 0.4s ease-out;
     }
-    #studentID {
-      margin-top: 1rem;
-      font-size: 1.2rem;
-      color: #666;
-    }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
+    .zhuyin-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin: 5px;
+      color: inherit;
+    }
+    .zhuyin-wrap .char {
+      font-size: 36px;
+      line-height: 1;
+      color: inherit;
+    }
+    .zhuyin-wrap .bopomofo-block {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-left: 6px;
+      font-size: 16px;
+      text-align: center;
+      height: 60px;
+      gap: 3px;
+      color: inherit;
+    }
+    .zhuyin-wrap .bopomofo-block .bpmf {
+      line-height: 1;
+      color: inherit;
+    }
+    .zhuyin-wrap .tone {
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 24px;
+      color: inherit;
+    }
+    .zhuyin-wrap .light-tone {
+      position: absolute;
+      top: -24px;
+      left: calc(100% + 6px);
+      transform: translateX(-50%);
+      font-size: 24px;
+      color: inherit;
+    }
   </style>
 </head>
+
 <body>
-  <h1>抽題囉</h1>
+  <div id="titleZhuyin"></div>
+
   <div class="controls">
-    <button class="easy" onclick="setMode('easy')">簡易版</button>
-    <button class="hard" onclick="setMode('hard')">困難版</button>
+    <button class="easy" onclick="setMode('easy')" id="easyBtn"></button>
+    <button class="hard" onclick="setMode('hard')" id="hardBtn"></button>
   </div>
-  <div id="studentID">載入中...</div>
+
+  <div id="studentID"></div>
+
   <div class="result" id="resultText"></div>
+
   <div class="flowers" id="flowerDisplay"></div>
+
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
-  <script>
-    const colors = ["粉紅", "綠", "藍", "黃", "紫"];
-    const flowerImageMap = {
-      "粉紅": "粉紅.png",
-      "綠": "綠.png",
-      "藍": "藍.png",
-      "黃": "黃.png",
-      "紫": "紫.png"
-    };
+<script>
+const colors = ["粉紅", "綠", "藍", "黃", "紫"];
+const flowerImageMap = {
+  "粉紅": "粉紅.png",
+  "綠": "綠.png",
+  "藍": "藍.png",
+  "黃": "黃.png",
+  "紫": "紫.png"
+};
+const scriptURL = "https://script.google.com/macros/s/你的GAS網址/exec";
 
-    const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
+let mode = "easy";
+let currentID = null;
+let isDrawing = false;
 
-    let mode = "easy";
-    let currentID = null;
-    let isDrawing = false;
+const zhuyinMap = {
+  "抽": "ㄔㄡ",
+  "題": "ㄊㄧˊ",
+  "囉": "ㄌㄨㄛ˙",
+  "簡": "ㄐㄧㄢˇ",
+  "易": "ㄧˋ",
+  "版": "ㄅㄢˇ",
+  "困": "ㄎㄨㄣˋ",
+  "難": "ㄋㄢˊ",
+  "粉": "ㄈㄣˇ",
+  "紅": "ㄏㄨㄥˊ",
+  "綠": "ㄌㄩˋ",
+  "藍": "ㄌㄢˊ",
+  "黃": "ㄏㄨㄤˊ",
+  "紫": "ㄗˇ",
+  "花": "ㄏㄨㄚ",
+  "朵": "ㄉㄨㄛˇ",
+  "學": "ㄒㄩㄝˊ",
+  "生": "ㄕㄥ",
+  "編": "ㄅㄧㄢ",
+  "號": "ㄏㄠˋ"
+};
 
-    async function getNextID() {
-      try {
-        const res = await fetch(scriptURL);
-        const json = await res.json();
-        return json.nextID || 1;
-      } catch (e) {
-        console.error("無法取得編號", e);
-        return Math.floor(Math.random() * 1000) + 1;
-      }
-    }
+function createZhuyinBlock(char, color="#333") {
+  const wrap = document.createElement('div');
+  wrap.className = 'zhuyin-wrap';
+  wrap.style.color = color;
 
-    async function init() {
-      currentID = await getNextID();
-      document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-    }
+  const charDiv = document.createElement('div');
+  charDiv.className = 'char';
+  charDiv.innerText = char;
+  wrap.appendChild(charDiv);
 
-    function setMode(newMode) {
-      if (isDrawing) return;
-      mode = newMode;
-      draw();
-    }
+  if (zhuyinMap[char]) {
+    const bopomofoBlock = document.createElement('div');
+    bopomofoBlock.className = 'bopomofo-block';
+    let sound = zhuyinMap[char];
+    let tone = "";
+    if (sound.includes("ˇ")) tone = "ˇ";
+    if (sound.includes("ˋ")) tone = "ˋ";
+    if (sound.includes("ˊ")) tone = "ˊ";
+    if (sound.includes("˙")) tone = "˙";
+    sound = sound.replace(/[ˇˋˊ˙ˉ]/g, '');
 
-    function getRandomItem(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
+    [...sound].forEach(s => {
+      const bpmfDiv = document.createElement('div');
+      bpmfDiv.className = 'bpmf';
+      bpmfDiv.innerText = s;
+      bopomofoBlock.appendChild(bpmfDiv);
+    });
+    wrap.appendChild(bopomofoBlock);
 
-    function draw() {
-      isDrawing = true;
-      document.getElementById("sound").play();
-      const resultText = document.getElementById("resultText");
-      const flowerDisplay = document.getElementById("flowerDisplay");
-      flowerDisplay.innerHTML = "";
-
-      let description = "";
-
-      if (mode === "easy") {
-        const count = Math.floor(Math.random() * 3) + 3;
-        const color = getRandomItem(colors);
-        description = `${count}朵${color}花`;
-        resultText.innerText = description;
-
-        for (let i = 0; i < count; i++) {
-          const img = document.createElement("img");
-          img.src = flowerImageMap[color];
-          img.alt = `${color}花`;
-          img.style.width = "100px";
-          img.style.margin = "0 5px";
-          flowerDisplay.appendChild(img);
-        }
-
+    if (tone && tone !== "ˉ") {
+      const toneDiv = document.createElement('div');
+      if (tone === "˙") {
+        toneDiv.className = 'light-tone';
       } else {
-        const combo = {};
-        const colorChoices = [...colors];
-        const colorCount = Math.floor(Math.random() * 2) + 2;
-        let total = 0;
-
-        while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
-          const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
-          const maxLeft = 10 - total;
-          const count = Math.floor(Math.random() * Math.min(4, maxLeft)) + 1;
-          if (total + count > 10) break;
-          combo[color] = count;
-          total += count;
-        }
-
-        const parts = [];
-        for (const [color, count] of Object.entries(combo)) {
-          parts.push(`${count}朵${color}花`);
-        }
-        description = parts.join("＋");
-        resultText.innerText = description;
-
-        for (const [color, count] of Object.entries(combo)) {
-          for (let i = 0; i < count; i++) {
-            const img = document.createElement("img");
-            img.src = flowerImageMap[color];
-            img.alt = `${color}花`;
-            img.style.width = "80px";
-            img.style.margin = "0 5px";
-            flowerDisplay.appendChild(img);
-          }
+        toneDiv.className = 'tone';
+        if (char === "易") {
+          toneDiv.style.top = "30%"; // 特別讓「易」字的四聲稍微偏上
         }
       }
+      toneDiv.innerText = tone;
+      wrap.appendChild(toneDiv);
+    }
+  }
+  return wrap;
+}
 
-      const timestamp = new Date().toISOString();
-      const data = {
-        id: currentID,
-        mode: mode,
-        description: description,
-        time: timestamp
-      };
+function renderTitle() {
+  const title = document.getElementById('titleZhuyin');
+  title.innerHTML = "";
+  for (const c of "抽題囉") {
+    title.appendChild(createZhuyinBlock(c, "#444"));
+  }
+}
 
-      fetch(scriptURL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(() => {
-        isDrawing = false;
-        currentID++;
-        document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-      }).catch(() => {
-        isDrawing = false;
-        alert("上傳失敗，請稍後重試！");
-      });
+function renderButtons() {
+  const easyBtn = document.getElementById('easyBtn');
+  const hardBtn = document.getElementById('hardBtn');
+  easyBtn.innerHTML = "";
+  hardBtn.innerHTML = "";
+  for (const c of "簡易版") easyBtn.appendChild(createZhuyinBlock(c, "black"));
+  for (const c of "困難版") hardBtn.appendChild(createZhuyinBlock(c, "white"));
+}
+
+function renderStudentID() {
+  const container = document.getElementById("studentID");
+  container.innerHTML = "";
+  const text = `學生編號：${currentID}`;
+  for (const c of text) {
+    if (zhuyinMap[c] !== undefined) {
+      container.appendChild(createZhuyinBlock(c, "#666"));
+    } else {
+      const span = document.createElement('span');
+      span.innerText = c;
+      span.style.fontSize = "36px";
+      span.style.margin = "5px";
+      container.appendChild(span);
+    }
+  }
+}
+
+async function init() {
+  try {
+    const res = await fetch(scriptURL);
+    const json = await res.json();
+    currentID = json.nextID || 1;
+  } catch {
+    currentID = Math.floor(Math.random() * 1000) + 1;
+  }
+  renderTitle();
+  renderStudentID();
+  renderButtons();
+}
+
+function setMode(newMode) {
+  if (isDrawing) return;
+  mode = newMode;
+  draw();
+}
+
+function draw() {
+  isDrawing = true;
+  document.getElementById("sound").play();
+  const resultText = document.getElementById("resultText");
+  const flowerDisplay = document.getElementById("flowerDisplay");
+  resultText.innerHTML = "";
+  flowerDisplay.innerHTML = "";
+
+  let description = "";
+  if (mode === "easy") {
+    const count = Math.floor(Math.random() * 3) + 3;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    description = `${count}朵${color}花`;
+    for (const c of description) {
+      if (zhuyinMap[c] !== undefined) {
+        resultText.appendChild(createZhuyinBlock(c, "#333"));
+      } else {
+        const span = document.createElement('span');
+        span.innerText = c;
+        span.style.fontSize = "36px";
+        span.style.margin = "5px";
+        resultText.appendChild(span);
+      }
+    }
+    for (let i = 0; i < count; i++) {
+      const img = document.createElement("img");
+      img.src = flowerImageMap[color];
+      img.style.width = "100px";
+      img.style.margin = "0 5px";
+      flowerDisplay.appendChild(img);
+    }
+  } else {
+    const combo = {};
+    const colorChoices = [...colors];
+    const colorCount = Math.floor(Math.random() * 2) + 2;
+    let total = 0;
+    while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
+      const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
+      const maxLeft = 10 - total;
+      const count = Math.floor(Math.random() * Math.min(4, maxLeft)) + 1;
+      if (total + count > 10) break;
+      combo[color] = count;
+      total += count;
     }
 
-    init();
-  </script>
+    const parts = [];
+    for (const [color, count] of Object.entries(combo)) {
+      parts.push(`${count}朵${color}花`);
+    }
+    description = parts.join("＋");
+
+    for (const c of description) {
+      if (zhuyinMap[c] !== undefined) {
+        resultText.appendChild(createZhuyinBlock(c, "#333"));
+      } else {
+        const span = document.createElement('span');
+        span.innerText = c;
+        span.style.fontSize = "36px";
+        span.style.margin = "5px";
+        resultText.appendChild(span);
+      }
+    }
+    for (const [color, count] of Object.entries(combo)) {
+      for (let i = 0; i < count; i++) {
+        const img = document.createElement("img");
+        img.src = flowerImageMap[color];
+        img.style.width = "80px";
+        img.style.margin = "0 5px";
+        flowerDisplay.appendChild(img);
+      }
+    }
+  }
+
+  fetch(scriptURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: currentID,
+      mode: mode,
+      description: description,
+      time: new Date().toISOString()
+    })
+  })
+  .then(res => res.json())
+  .then(() => {
+    isDrawing = false;
+    currentID++;
+    renderStudentID();
+  })
+  .catch(() => {
+    isDrawing = false;
+    alert("上傳失敗，請稍後重試！");
+  });
+}
+
+init();
+</script>
 </body>
 </html>
