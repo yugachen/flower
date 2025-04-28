@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>花朵抽題器（最終修正版v2）</title>
+  <title>花朵抽題器</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -11,21 +11,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       padding: 2rem;
     }
     #titleZhuyin {
       display: flex;
       justify-content: center;
-      margin-top: 0;
-      margin-bottom: 1rem;
       flex-wrap: wrap;
       gap: 10px;
+      margin-bottom: 1rem;
     }
     .controls {
-      margin: 1rem;
       display: flex;
       gap: 1rem;
+      margin-bottom: 1rem;
     }
     button {
       padding: 0.6rem 1rem;
@@ -33,22 +31,18 @@
       border: none;
       border-radius: 20px;
       cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
+      transition: 0.3s;
     }
     button:hover {
       opacity: 0.9;
     }
-    button.hard {
-      background-color: #FF5151;
-      color: white;
-    }
     button.easy {
       background-color: #ffccdd;
       color: black;
+    }
+    button.hard {
+      background-color: #FF5151;
+      color: white;
     }
     .result, #studentID {
       margin-top: 1.5rem;
@@ -61,57 +55,22 @@
     }
     .flowers {
       margin-top: 1rem;
-      font-size: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 5px;
       animation: pop 0.4s ease-out;
     }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
-    .zhuyin-wrap {
-      position: relative;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      margin: 5px;
-      color: inherit;
+    .admin-controls {
+      margin-top: 1rem;
     }
-    .zhuyin-wrap .char {
-      font-size: 36px;
-      line-height: 1;
-      color: inherit;
-    }
-    .zhuyin-wrap .bopomofo-block {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      margin-left: 6px;
-      font-size: 16px;
-      text-align: center;
-      height: 60px;
-      gap: 3px;
-      color: inherit;
-    }
-    .zhuyin-wrap .bopomofo-block .bpmf {
-      line-height: 1;
-      color: inherit;
-    }
-    .zhuyin-wrap .tone {
-      position: absolute;
-      right: -10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 24px;
-      color: inherit;
-    }
-    .zhuyin-wrap .light-tone {
-      position: absolute;
-      top: -24px;
-      left: calc(100% + 6px);
-      transform: translateX(-50%);
-      font-size: 24px;
-      color: inherit;
+    .admin-controls button {
+      background-color: #ff9966;
+      color: white;
     }
   </style>
 </head>
@@ -120,8 +79,8 @@
   <div id="titleZhuyin"></div>
 
   <div class="controls">
-    <button class="easy" onclick="setMode('easy')" id="easyBtn"></button>
-    <button class="hard" onclick="setMode('hard')" id="hardBtn"></button>
+    <button class="easy" onclick="setMode('easy')" id="easyBtn">簡易版</button>
+    <button class="hard" onclick="setMode('hard')" id="hardBtn">困難版</button>
   </div>
 
   <div id="studentID"></div>
@@ -129,6 +88,10 @@
   <div class="result" id="resultText"></div>
 
   <div class="flowers" id="flowerDisplay"></div>
+
+  <div class="admin-controls" id="adminArea" style="display:none;">
+    <button onclick="resetStudentID()">🔄 重置學生編號</button>
+  </div>
 
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
@@ -141,113 +104,17 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
-const scriptURL = "https://script.google.com/macros/s/你的GAS網址/exec";
 
+const scriptURL = "https://script.google.com/macros/s/你的GAS網址/exec";
 let mode = "easy";
 let currentID = null;
 let isDrawing = false;
 
-const zhuyinMap = {
-  "抽": "ㄔㄡ",
-  "題": "ㄊㄧˊ",
-  "囉": "ㄌㄨㄛ˙",
-  "簡": "ㄐㄧㄢˇ",
-  "易": "ㄧˋ",
-  "版": "ㄅㄢˇ",
-  "困": "ㄎㄨㄣˋ",
-  "難": "ㄋㄢˊ",
-  "粉": "ㄈㄣˇ",
-  "紅": "ㄏㄨㄥˊ",
-  "綠": "ㄌㄩˋ",
-  "藍": "ㄌㄢˊ",
-  "黃": "ㄏㄨㄤˊ",
-  "紫": "ㄗˇ",
-  "花": "ㄏㄨㄚ",
-  "朵": "ㄉㄨㄛˇ",
-  "學": "ㄒㄩㄝˊ",
-  "生": "ㄕㄥ",
-  "編": "ㄅㄧㄢ",
-  "號": "ㄏㄠˋ"
-};
-
-function createZhuyinBlock(char, color="#333") {
-  const wrap = document.createElement('div');
-  wrap.className = 'zhuyin-wrap';
-  wrap.style.color = color;
-
-  const charDiv = document.createElement('div');
-  charDiv.className = 'char';
-  charDiv.innerText = char;
-  wrap.appendChild(charDiv);
-
-  if (zhuyinMap[char]) {
-    const bopomofoBlock = document.createElement('div');
-    bopomofoBlock.className = 'bopomofo-block';
-    let sound = zhuyinMap[char];
-    let tone = "";
-    if (sound.includes("ˇ")) tone = "ˇ";
-    if (sound.includes("ˋ")) tone = "ˋ";
-    if (sound.includes("ˊ")) tone = "ˊ";
-    if (sound.includes("˙")) tone = "˙";
-    sound = sound.replace(/[ˇˋˊ˙ˉ]/g, '');
-
-    [...sound].forEach(s => {
-      const bpmfDiv = document.createElement('div');
-      bpmfDiv.className = 'bpmf';
-      bpmfDiv.innerText = s;
-      bopomofoBlock.appendChild(bpmfDiv);
-    });
-    wrap.appendChild(bopomofoBlock);
-
-    if (tone && tone !== "ˉ") {
-      const toneDiv = document.createElement('div');
-      if (tone === "˙") {
-        toneDiv.className = 'light-tone';
-      } else {
-        toneDiv.className = 'tone';
-        if (char === "易") {
-          toneDiv.style.top = "30%"; // 特別讓「易」字的四聲稍微偏上
-        }
-      }
-      toneDiv.innerText = tone;
-      wrap.appendChild(toneDiv);
-    }
-  }
-  return wrap;
-}
-
-function renderTitle() {
-  const title = document.getElementById('titleZhuyin');
-  title.innerHTML = "";
-  for (const c of "抽題囉") {
-    title.appendChild(createZhuyinBlock(c, "#444"));
-  }
-}
-
-function renderButtons() {
-  const easyBtn = document.getElementById('easyBtn');
-  const hardBtn = document.getElementById('hardBtn');
-  easyBtn.innerHTML = "";
-  hardBtn.innerHTML = "";
-  for (const c of "簡易版") easyBtn.appendChild(createZhuyinBlock(c, "black"));
-  for (const c of "困難版") hardBtn.appendChild(createZhuyinBlock(c, "white"));
-}
-
-function renderStudentID() {
-  const container = document.getElementById("studentID");
-  container.innerHTML = "";
-  const text = `學生編號：${currentID}`;
-  for (const c of text) {
-    if (zhuyinMap[c] !== undefined) {
-      container.appendChild(createZhuyinBlock(c, "#666"));
-    } else {
-      const span = document.createElement('span');
-      span.innerText = c;
-      span.style.fontSize = "36px";
-      span.style.margin = "5px";
-      container.appendChild(span);
-    }
-  }
+// 判斷是否為管理者模式
+const urlParams = new URLSearchParams(window.location.search);
+const isAdmin = urlParams.get('admin') === 'true';
+if (isAdmin) {
+  document.getElementById('adminArea').style.display = 'block';
 }
 
 async function init() {
@@ -258,9 +125,7 @@ async function init() {
   } catch {
     currentID = Math.floor(Math.random() * 1000) + 1;
   }
-  renderTitle();
   renderStudentID();
-  renderButtons();
 }
 
 function setMode(newMode) {
@@ -282,22 +147,12 @@ function draw() {
     const count = Math.floor(Math.random() * 3) + 3;
     const color = colors[Math.floor(Math.random() * colors.length)];
     description = `${count}朵${color}花`;
-    for (const c of description) {
-      if (zhuyinMap[c] !== undefined) {
-        resultText.appendChild(createZhuyinBlock(c, "#333"));
-      } else {
-        const span = document.createElement('span');
-        span.innerText = c;
-        span.style.fontSize = "36px";
-        span.style.margin = "5px";
-        resultText.appendChild(span);
-      }
-    }
+    resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
       img.src = flowerImageMap[color];
-      img.style.width = "100px";
-      img.style.margin = "0 5px";
+      img.style.width = "80px";
+      img.style.margin = "5px";
       flowerDisplay.appendChild(img);
     }
   } else {
@@ -313,30 +168,18 @@ function draw() {
       combo[color] = count;
       total += count;
     }
-
     const parts = [];
     for (const [color, count] of Object.entries(combo)) {
       parts.push(`${count}朵${color}花`);
     }
     description = parts.join("＋");
-
-    for (const c of description) {
-      if (zhuyinMap[c] !== undefined) {
-        resultText.appendChild(createZhuyinBlock(c, "#333"));
-      } else {
-        const span = document.createElement('span');
-        span.innerText = c;
-        span.style.fontSize = "36px";
-        span.style.margin = "5px";
-        resultText.appendChild(span);
-      }
-    }
+    resultText.innerText = description;
     for (const [color, count] of Object.entries(combo)) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
         img.src = flowerImageMap[color];
         img.style.width = "80px";
-        img.style.margin = "0 5px";
+        img.style.margin = "5px";
         flowerDisplay.appendChild(img);
       }
     }
@@ -352,7 +195,6 @@ function draw() {
       time: new Date().toISOString()
     })
   })
-  .then(res => res.json())
   .then(() => {
     isDrawing = false;
     currentID++;
@@ -361,6 +203,25 @@ function draw() {
   .catch(() => {
     isDrawing = false;
     alert("上傳失敗，請稍後重試！");
+  });
+}
+
+function renderStudentID() {
+  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+}
+
+// 🔥 重置學生編號功能（隱藏版）
+function resetStudentID() {
+  if (!confirm("確定要重置學生編號嗎？（無法復原）")) return;
+  fetch(scriptURL + "?reset=true", {
+    method: "GET"
+  })
+  .then(() => {
+    alert("重置完成！");
+    window.location.reload();
+  })
+  .catch(() => {
+    alert("重置失敗，請稍後再試！");
   });
 }
 
