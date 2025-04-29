@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>花朵抽題器</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>花朵抽題器（有admin重置功能版）</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -11,19 +11,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       padding: 2rem;
     }
-    #titleZhuyin {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 1rem;
-    }
     .controls {
+      margin: 1rem;
       display: flex;
       gap: 1rem;
-      margin-bottom: 1rem;
     }
     button {
       padding: 0.6rem 1rem;
@@ -31,19 +25,13 @@
       border: none;
       border-radius: 20px;
       cursor: pointer;
-      transition: 0.3s;
+      transition: all 0.3s ease;
     }
     button:hover {
       opacity: 0.9;
     }
-    button.easy {
-      background-color: #ffccdd;
-      color: black;
-    }
-    button.hard {
-      background-color: #FF5151;
-      color: white;
-    }
+    button.hard { background-color: #FF5151; color: white; }
+    button.easy { background-color: #ffccdd; color: black; }
     .result, #studentID {
       margin-top: 1.5rem;
       font-size: 1.5rem;
@@ -55,44 +43,26 @@
     }
     .flowers {
       margin-top: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 5px;
+      font-size: 2.5rem;
       animation: pop 0.4s ease-out;
     }
     @keyframes pop {
       0% { transform: scale(0); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
-    .admin-controls {
-      margin-top: 1rem;
-    }
-    .admin-controls button {
-      background-color: #ff9966;
-      color: white;
-    }
   </style>
 </head>
-
 <body>
-  <div id="titleZhuyin"></div>
+  <h1>抽題囉</h1>
 
   <div class="controls">
-    <button class="easy" onclick="setMode('easy')" id="easyBtn">簡易版</button>
-    <button class="hard" onclick="setMode('hard')" id="hardBtn">困難版</button>
+    <button class="easy" onclick="setMode('easy')">簡易版</button>
+    <button class="hard" onclick="setMode('hard')">困難版</button>
   </div>
 
   <div id="studentID"></div>
-
   <div class="result" id="resultText"></div>
-
   <div class="flowers" id="flowerDisplay"></div>
-
-  <div class="admin-controls" id="adminArea" style="display:none;">
-    <button onclick="resetStudentID()">🔄 重置學生編號</button>
-  </div>
-
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
 <script>
@@ -104,18 +74,11 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
-
 const scriptURL = "https://script.google.com/macros/s/你的GAS網址/exec";
+
 let mode = "easy";
 let currentID = null;
 let isDrawing = false;
-
-// 判斷是否為管理者模式
-const urlParams = new URLSearchParams(window.location.search);
-const isAdmin = urlParams.get('admin') === 'true';
-if (isAdmin) {
-  document.getElementById('adminArea').style.display = 'block';
-}
 
 async function init() {
   try {
@@ -126,12 +89,22 @@ async function init() {
     currentID = Math.floor(Math.random() * 1000) + 1;
   }
   renderStudentID();
+  checkAdmin();
+}
+
+function renderStudentID() {
+  const container = document.getElementById("studentID");
+  container.innerText = `學生編號：${currentID}`;
 }
 
 function setMode(newMode) {
   if (isDrawing) return;
   mode = newMode;
   draw();
+}
+
+function getRandomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function draw() {
@@ -143,16 +116,17 @@ function draw() {
   flowerDisplay.innerHTML = "";
 
   let description = "";
+
   if (mode === "easy") {
     const count = Math.floor(Math.random() * 3) + 3;
-    const color = colors[Math.floor(Math.random() * colors.length)];
+    const color = getRandomItem(colors);
     description = `${count}朵${color}花`;
     resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
       img.src = flowerImageMap[color];
       img.style.width = "80px";
-      img.style.margin = "5px";
+      img.style.margin = "0 5px";
       flowerDisplay.appendChild(img);
     }
   } else {
@@ -160,6 +134,7 @@ function draw() {
     const colorChoices = [...colors];
     const colorCount = Math.floor(Math.random() * 2) + 2;
     let total = 0;
+
     while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
       const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
       const maxLeft = 10 - total;
@@ -168,18 +143,20 @@ function draw() {
       combo[color] = count;
       total += count;
     }
+
     const parts = [];
     for (const [color, count] of Object.entries(combo)) {
       parts.push(`${count}朵${color}花`);
     }
     description = parts.join("＋");
     resultText.innerText = description;
+
     for (const [color, count] of Object.entries(combo)) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
         img.src = flowerImageMap[color];
         img.style.width = "80px";
-        img.style.margin = "5px";
+        img.style.margin = "0 5px";
         flowerDisplay.appendChild(img);
       }
     }
@@ -194,38 +171,39 @@ function draw() {
       description: description,
       time: new Date().toISOString()
     })
-  })
-  .then(() => {
-    isDrawing = false;
-    currentID++;
-    renderStudentID();
-  })
-  .catch(() => {
-    isDrawing = false;
-    alert("上傳失敗，請稍後重試！");
-  });
+  }).then(res => res.json())
+    .then(() => {
+      isDrawing = false;
+      currentID++;
+      renderStudentID();
+    })
+    .catch(() => {
+      isDrawing = false;
+      alert("上傳失敗，請稍後重試！");
+    });
 }
 
-function renderStudentID() {
-  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-}
-
-// 🔥 重置學生編號功能（隱藏版）
-function resetStudentID() {
-  if (!confirm("確定要重置學生編號嗎？（無法復原）")) return;
-  fetch(scriptURL + "?reset=true", {
-    method: "GET"
-  })
-  .then(() => {
-    alert("重置完成！");
-    window.location.reload();
-  })
-  .catch(() => {
-    alert("重置失敗，請稍後再試！");
-  });
+// ➡️ 新增 admin 功能
+function checkAdmin() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('admin') === 'true') {
+    const adminButton = document.createElement('button');
+    adminButton.innerText = "重置學生編號";
+    adminButton.style.backgroundColor = "#aaa";
+    adminButton.style.color = "white";
+    adminButton.style.marginTop = "1rem";
+    adminButton.onclick = async () => {
+      if (confirm("確定要將學生編號歸零嗎？")) {
+        await fetch(scriptURL + "?reset=true");
+        alert("已重置成功，請重新整理頁面！");
+      }
+    };
+    document.body.insertBefore(adminButton, document.getElementById("studentID"));
+  }
 }
 
 init();
 </script>
+
 </body>
 </html>
