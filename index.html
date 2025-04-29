@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>花朵抽題器（有admin重置功能版）</title>
+  <title>花朵抽題器（最終版）</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -11,7 +11,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       padding: 2rem;
     }
     .controls {
@@ -27,11 +26,8 @@
       cursor: pointer;
       transition: all 0.3s ease;
     }
-    button:hover {
-      opacity: 0.9;
-    }
-    button.hard { background-color: #FF5151; color: white; }
     button.easy { background-color: #ffccdd; color: black; }
+    button.hard { background-color: #FF5151; color: white; }
     .result, #studentID {
       margin-top: 1.5rem;
       font-size: 1.5rem;
@@ -44,26 +40,18 @@
     .flowers {
       margin-top: 1rem;
       font-size: 2.5rem;
-      animation: pop 0.4s ease-out;
-    }
-    @keyframes pop {
-      0% { transform: scale(0); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
   <h1>抽題囉</h1>
-
   <div class="controls">
     <button class="easy" onclick="setMode('easy')">簡易版</button>
     <button class="hard" onclick="setMode('hard')">困難版</button>
   </div>
-
   <div id="studentID"></div>
   <div class="result" id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
-  <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
 <script>
 const colors = ["粉紅", "綠", "藍", "黃", "紫"];
@@ -93,8 +81,7 @@ async function init() {
 }
 
 function renderStudentID() {
-  const container = document.getElementById("studentID");
-  container.innerText = `學生編號：${currentID}`;
+  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
 }
 
 function setMode(newMode) {
@@ -103,13 +90,8 @@ function setMode(newMode) {
   draw();
 }
 
-function getRandomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
 function draw() {
   isDrawing = true;
-  document.getElementById("sound").play();
   const resultText = document.getElementById("resultText");
   const flowerDisplay = document.getElementById("flowerDisplay");
   resultText.innerHTML = "";
@@ -119,7 +101,7 @@ function draw() {
 
   if (mode === "easy") {
     const count = Math.floor(Math.random() * 3) + 3;
-    const color = getRandomItem(colors);
+    const color = colors[Math.floor(Math.random() * colors.length)];
     description = `${count}朵${color}花`;
     resultText.innerText = description;
     for (let i = 0; i < count; i++) {
@@ -171,34 +153,34 @@ function draw() {
       description: description,
       time: new Date().toISOString()
     })
-  }).then(res => res.json())
-    .then(() => {
-      isDrawing = false;
-      currentID++;
-      renderStudentID();
-    })
-    .catch(() => {
-      isDrawing = false;
-      alert("上傳失敗，請稍後重試！");
-    });
+  })
+  .then(res => res.text())  // ← ← 注意這裡！改成 text()
+  .then(() => {
+    isDrawing = false;
+    currentID++;
+    renderStudentID();
+  })
+  .catch(() => {
+    isDrawing = false;
+    alert("上傳失敗，請稍後重試！");
+  });
 }
 
-// ➡️ 新增 admin 功能
 function checkAdmin() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('admin') === 'true') {
-    const adminButton = document.createElement('button');
-    adminButton.innerText = "重置學生編號";
-    adminButton.style.backgroundColor = "#aaa";
-    adminButton.style.color = "white";
-    adminButton.style.marginTop = "1rem";
-    adminButton.onclick = async () => {
-      if (confirm("確定要將學生編號歸零嗎？")) {
+    const btn = document.createElement("button");
+    btn.innerText = "重置學生編號";
+    btn.style.backgroundColor = "#aaa";
+    btn.style.color = "white";
+    btn.style.marginTop = "1rem";
+    btn.onclick = async () => {
+      if (confirm("確定要重置嗎？")) {
         await fetch(scriptURL + "?reset=true");
-        alert("已重置成功，請重新整理頁面！");
+        alert("重置完成，請重新整理！");
       }
     };
-    document.body.insertBefore(adminButton, document.getElementById("studentID"));
+    document.body.insertBefore(btn, document.getElementById("studentID"));
   }
 }
 
