@@ -71,7 +71,8 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
-const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec"; // ⚡ 這裡記得換成你的 Script URL
+
+const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
 let mode = "easy";
 let currentID = null;
@@ -81,7 +82,7 @@ async function init() {
   try {
     const res = await fetch(scriptURL);
     const json = await res.json();
-    currentID = json.nextFlowerID || 1;
+    currentID = json.nextID || 1;  // 這裡應該是 nextID，不是 nextFlowerID
   } catch {
     currentID = 1;
   }
