@@ -1,5 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>花朵抽題器（最終版）</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #fffaf5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    .controls {
+      margin: 1rem;
+      display: flex;
+      gap: 1rem;
+    }
+    button {
+      padding: 0.6rem 1rem;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button.easy { background-color: #ffccdd; color: black; }
+    button.hard { background-color: #FF5151; color: white; }
+    .result, #studentID {
+      margin-top: 1.5rem;
+      font-size: 1.5rem;
+      color: #333;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .flowers {
+      margin-top: 1rem;
+      font-size: 2.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>抽題囉</h1>
+  <div class="controls">
+    <button class="easy" onclick="setMode('easy')">簡易版</button>
+    <button class="hard" onclick="setMode('hard')">困難版</button>
+  </div>
+  <div id="studentID"></div>
+  <div class="result" id="resultText"></div>
+  <div class="flowers" id="flowerDisplay"></div>
+
 <script>
-const scriptURL = "你的 Script URL"; // 換成你的 Apps Script 部署網址
 const colors = ["粉紅", "綠", "藍", "黃", "紫"];
 const flowerImageMap = {
   "粉紅": "粉紅.png",
@@ -8,6 +62,8 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
+const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
+
 let mode = "easy";
 let currentID = null;
 let isDrawing = false;
@@ -16,36 +72,43 @@ async function init() {
   try {
     const res = await fetch(scriptURL);
     const json = await res.json();
-    currentID = json.nextFlowerID || 1;
+    currentID = json.nextID || 1;
   } catch {
-    currentID = 1;
+    currentID = Math.floor(Math.random() * 1000) + 1;
   }
+  renderStudentID();
+  checkAdmin();
+}
+
+function renderStudentID() {
   document.getElementById("studentID").innerText = `學生編號：${currentID}`;
 }
+
 function setMode(newMode) {
   if (isDrawing) return;
   mode = newMode;
   draw();
 }
-function getRandomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+
 function draw() {
   isDrawing = true;
-  document.getElementById("sound").play();
   const resultText = document.getElementById("resultText");
   const flowerDisplay = document.getElementById("flowerDisplay");
+  resultText.innerHTML = "";
   flowerDisplay.innerHTML = "";
 
   let description = "";
+
   if (mode === "easy") {
     const count = Math.floor(Math.random() * 3) + 3;
-    const color = getRandomItem(colors);
+    const color = colors[Math.floor(Math.random() * colors.length)];
     description = `${count}朵${color}花`;
     resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
       img.src = flowerImageMap[color];
+      img.style.width = "80px";
+      img.style.margin = "0 5px";
       flowerDisplay.appendChild(img);
     }
   } else {
@@ -53,6 +116,7 @@ function draw() {
     const colorChoices = [...colors];
     const colorCount = Math.floor(Math.random() * 2) + 2;
     let total = 0;
+
     while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
       const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
       const maxLeft = 10 - total;
@@ -61,16 +125,20 @@ function draw() {
       combo[color] = count;
       total += count;
     }
+
     const parts = [];
     for (const [color, count] of Object.entries(combo)) {
       parts.push(`${count}朵${color}花`);
     }
     description = parts.join("＋");
     resultText.innerText = description;
+
     for (const [color, count] of Object.entries(combo)) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
         img.src = flowerImageMap[color];
+        img.style.width = "80px";
+        img.style.margin = "0 5px";
         flowerDisplay.appendChild(img);
       }
     }
@@ -86,15 +154,38 @@ function draw() {
       time: new Date().toISOString()
     })
   })
+  .then(res => res.text())  // ← ← 注意這裡！改成 text()
   .then(() => {
-    currentID++;
-    document.getElementById("studentID").innerText = `學生編號：${currentID}`;
     isDrawing = false;
+    currentID++;
+    renderStudentID();
   })
   .catch(() => {
     isDrawing = false;
     alert("上傳失敗，請稍後重試！");
   });
 }
+
+function checkAdmin() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('admin') === 'true') {
+    const btn = document.createElement("button");
+    btn.innerText = "重置學生編號";
+    btn.style.backgroundColor = "#aaa";
+    btn.style.color = "white";
+    btn.style.marginTop = "1rem";
+    btn.onclick = async () => {
+      if (confirm("確定要重置嗎？")) {
+        await fetch(scriptURL + "?reset=true");
+        alert("重置完成，請重新整理！");
+      }
+    };
+    document.body.insertBefore(btn, document.getElementById("studentID"));
+  }
+}
+
 init();
 </script>
+
+</body>
+</html>
