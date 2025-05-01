@@ -1,4 +1,3 @@
-<!-- ✅ 花朵抽題器 HTML 最終版 -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -14,7 +13,11 @@
       align-items: center;
       padding: 2rem;
     }
-    .controls { margin: 1rem; display: flex; gap: 1rem; }
+    .controls {
+      margin: 1rem;
+      display: flex;
+      gap: 1rem;
+    }
     button {
       padding: 0.6rem 1rem;
       border: none;
@@ -22,15 +25,29 @@
       font-size: 1.1rem;
       cursor: pointer;
     }
-    button.easy { background-color: #ffccdd; color: black; }
-    button.hard { background-color: #FF5151; color: white; }
+    button.easy {
+      background-color: #ffccdd;
+      color: black;
+    }
+    button.hard {
+      background-color: #FF5151;
+      color: white;
+    }
     #studentID, #resultText {
       margin-top: 1rem;
       font-size: 1.5rem;
       text-align: center;
     }
-    .flowers { margin-top: 1rem; display: flex; flex-wrap: wrap; justify-content: center; }
-    img { width: 80px; margin: 0 5px; }
+    .flowers {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    img {
+      width: 80px;
+      margin: 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -42,7 +59,8 @@
   <div id="studentID"></div>
   <div id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
-  <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+  <audio id="sound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_3964f74d46.mp3"></audio>
+
 <script>
 const colors = ["粉紅", "綠", "藍", "黃", "紫"];
 const flowerImageMap = {
@@ -53,6 +71,7 @@ const flowerImageMap = {
   "紫": "紫.png"
 };
 const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
+
 let mode = "easy";
 let currentID = null;
 let isDrawing = false;
@@ -61,8 +80,9 @@ async function init() {
   try {
     const res = await fetch(scriptURL);
     const json = await res.json();
-    currentID = json.nextFlowerID || 1;
-  } catch {
+    currentID = json.flowerNextID || 1; // 使用正確的欄位名稱
+  } catch (err) {
+    console.error("初始化失敗", err);
     currentID = 1;
   }
   document.getElementById("studentID").innerText = `學生編號：${currentID}`;
@@ -122,11 +142,18 @@ function draw() {
 
   fetch(scriptURL, {
     method: "POST",
-    mode: "cors",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: currentID, mode, description, time: new Date().toISOString() })
+    body: JSON.stringify({
+      id: currentID,
+      mode,
+      description,
+      time: new Date().toISOString()
+    })
   })
-  .then(res => res.ok ? res.text() : Promise.reject("fail"))
+  .then(res => {
+    if (!res.ok) throw new Error("上傳失敗");
+    return res.text();
+  })
   .then(() => {
     currentID++;
     document.getElementById("studentID").innerText = `學生編號：${currentID}`;
@@ -137,6 +164,7 @@ function draw() {
     alert("上傳失敗，請稍後重試！");
   });
 }
+
 init();
 </script>
 </body>
