@@ -56,7 +56,7 @@
     <button class="hard" onclick="setMode('hard')">困難版</button>
   </div>
 
-  <div id="studentID"></div>
+  <div id="studentID">學生編號載入中...</div>
   <div id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
 
@@ -71,7 +71,6 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
-
 const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
 let mode = "easy";
@@ -82,11 +81,13 @@ async function init() {
   try {
     const res = await fetch(scriptURL);
     const json = await res.json();
-    currentID = json.nextFlowerID || 1;
-  } catch {
-    currentID = 1;
+    currentID = json.nextID || 1;
+    document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+  } catch (err) {
+    console.error("ID 讀取失敗", err);
+    document.getElementById("studentID").innerText = `學生編號讀取失敗`;
+    currentID = Math.floor(Math.random() * 1000) + 1;
   }
-  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
 }
 
 function setMode(newMode) {
@@ -145,8 +146,10 @@ function draw() {
     }
   }
 
+  // 上傳資料
   fetch(scriptURL, {
     method: "POST",
+    mode: "cors",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id: currentID,
@@ -155,12 +158,17 @@ function draw() {
       time: new Date().toISOString()
     })
   })
+  .then(res => {
+    if (!res.ok) throw new Error("上傳失敗");
+    return res.text();
+  })
   .then(() => {
     currentID++;
     document.getElementById("studentID").innerText = `學生編號：${currentID}`;
     isDrawing = false;
   })
-  .catch(() => {
+  .catch(err => {
+    console.error("Fetch Error:", err);
     isDrawing = false;
     alert("上傳失敗，請稍後重試！");
   });
