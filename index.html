@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>花朵抽題器</title>
   <style>
     body {
@@ -37,6 +37,10 @@
       margin-top: 1rem;
       font-size: 1.5rem;
       text-align: center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
     }
     .flowers {
       margin-top: 1rem;
@@ -47,6 +51,31 @@
     img {
       width: 80px;
       margin: 0 5px;
+    }
+    .zhuyin-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      color: #333;
+    }
+    .zhuyin-wrap .char {
+      font-size: 36px;
+      line-height: 1;
+    }
+    .bopomofo-block {
+      display: flex;
+      flex-direction: column;
+      margin-left: 5px;
+      font-size: 16px;
+      align-items: center;
+    }
+    .bpmf { line-height: 1; }
+    .tone {
+      position: absolute;
+      top: -20px;
+      right: -10px;
+      font-size: 20px;
     }
   </style>
 </head>
@@ -60,111 +89,156 @@
   <div id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
 
-<script>
-const colors = ["粉紅", "綠", "藍", "黃", "紫"];
-const flowerImageMap = {
-  "粉紅": "粉紅.png",
-  "綠": "綠.png",
-  "藍": "藍.png",
-  "黃": "黃.png",
-  "紫": "紫.png"
-};
-const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
-let mode = "easy";
-let currentID = null;
-let isDrawing = false;
+    const colors = ["粉紅", "綠", "藍", "黃", "紫"];
+    const flowerImageMap = {
+      "粉紅": "粉紅.png",
+      "綠": "綠.png",
+      "藍": "藍.png",
+      "黃": "黃.png",
+      "紫": "紫.png"
+    };
 
-async function init() {
-  try {
-    const res = await fetch(scriptURL);
-    const json = await res.json();
-    currentID = json.nextID || 1;
-  } catch (err) {
-    console.error("初始化失敗", err);
-    currentID = 1;
-  }
-  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-}
+    const zhuyinMap = {
+      "抽":"ㄔㄡ", "題":"ㄊㄧˊ", "囉":"ㄌㄨㄛ˙", "簡":"ㄐㄧㄢˇ", "易":"ㄧˋ", "版":"ㄅㄢˇ",
+      "困":"ㄎㄨㄣˋ", "難":"ㄋㄢˊ", "粉":"ㄈㄣˇ", "紅":"ㄏㄨㄥˊ", "綠":"ㄌㄩˋ",
+      "藍":"ㄌㄢˊ", "黃":"ㄏㄨㄤˊ", "紫":"ㄗˇ", "花":"ㄏㄨㄚ", "朵":"ㄉㄨㄛˇ",
+      "學":"ㄒㄩㄝˊ", "生":"ㄕㄥ", "編":"ㄅㄧㄢ", "號":"ㄏㄠˋ"
+    };
 
-function setMode(newMode) {
-  if (isDrawing) return;
-  mode = newMode;
-  draw();
-}
+    let mode = "easy";
+    let currentID = null;
+    let isDrawing = false;
 
-function draw() {
-  isDrawing = true;
-  const resultText = document.getElementById("resultText");
-  const flowerDisplay = document.getElementById("flowerDisplay");
-  flowerDisplay.innerHTML = "";
-
-  let description = "";
-  if (mode === "easy") {
-    const count = Math.floor(Math.random() * 3) + 3;
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    description = `${count}朵${color}花`;
-    resultText.innerText = description;
-    for (let i = 0; i < count; i++) {
-      const img = document.createElement("img");
-      img.src = flowerImageMap[color];
-      flowerDisplay.appendChild(img);
-    }
-  } else {
-    const combo = {};
-    const colorChoices = [...colors];
-    const colorCount = Math.floor(Math.random() * 2) + 2;
-    let total = 0;
-    while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
-      const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
-      const maxLeft = 10 - total;
-      const count = Math.floor(Math.random() * Math.min(4, maxLeft)) + 1;
-      if (total + count > 10) break;
-      combo[color] = count;
-      total += count;
-    }
-    const parts = [];
-    for (const [color, count] of Object.entries(combo)) {
-      parts.push(`${count}朵${color}花`);
-    }
-    description = parts.join("＋");
-    resultText.innerText = description;
-    for (const [color, count] of Object.entries(combo)) {
-      for (let i = 0; i < count; i++) {
-        const img = document.createElement("img");
-        img.src = flowerImageMap[color];
-        flowerDisplay.appendChild(img);
+    async function init() {
+      try {
+        const res = await fetch(scriptURL);
+        const json = await res.json();
+        currentID = json.nextID || 1;
+        renderStudentID();
+      } catch (err) {
+        alert("初始化失敗：" + err);
+        currentID = 1;
+        renderStudentID();
       }
     }
-  }
 
-  fetch(scriptURL, {
-    method: "POST",
-    mode: "cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: currentID,
-      mode,
-      description,
-      time: new Date().toISOString()
-    })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("上傳失敗");
-    return res.text();
-  })
-  .then(() => {
-    currentID++;
-    document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-    isDrawing = false;
-  })
-  .catch(() => {
-    isDrawing = false;
-    alert("上傳失敗，請稍後重試！");
-  });
-}
+    function createZhuyinBlock(char) {
+      const wrap = document.createElement('div');
+      wrap.className = 'zhuyin-wrap';
 
-init();
-</script>
+      const charDiv = document.createElement('div');
+      charDiv.className = 'char';
+      charDiv.innerText = char;
+      wrap.appendChild(charDiv);
+
+      if (zhuyinMap[char]) {
+        const block = document.createElement('div');
+        block.className = 'bopomofo-block';
+        let sound = zhuyinMap[char];
+        const tone = sound.match(/[ˇˋˊ˙]/);
+        sound = sound.replace(/[ˇˋˊ˙]/g, '');
+        for (const s of sound) {
+          const span = document.createElement('div');
+          span.className = 'bpmf';
+          span.innerText = s;
+          block.appendChild(span);
+        }
+        wrap.appendChild(block);
+        if (tone) {
+          const toneEl = document.createElement('div');
+          toneEl.className = 'tone';
+          toneEl.innerText = tone[0];
+          wrap.appendChild(toneEl);
+        }
+      }
+
+      return wrap;
+    }
+
+    function renderStudentID() {
+      const container = document.getElementById("studentID");
+      container.innerHTML = "";
+      const text = `學生編號：${currentID}`;
+      for (const c of text) {
+        container.appendChild(createZhuyinBlock(c));
+      }
+    }
+
+    function setMode(newMode) {
+      if (isDrawing) return;
+      mode = newMode;
+      draw();
+    }
+
+    function draw() {
+      isDrawing = true;
+      const resultText = document.getElementById("resultText");
+      const flowerDisplay = document.getElementById("flowerDisplay");
+      resultText.innerHTML = "";
+      flowerDisplay.innerHTML = "";
+
+      let description = "";
+
+      if (mode === "easy") {
+        const count = Math.floor(Math.random() * 3) + 3;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        description = `${count}朵${color}花`;
+      } else {
+        const combo = {};
+        const colorChoices = [...colors];
+        const colorCount = Math.floor(Math.random() * 2) + 2;
+        let total = 0;
+        while (Object.keys(combo).length < colorCount && colorChoices.length > 0) {
+          const color = colorChoices.splice(Math.floor(Math.random() * colorChoices.length), 1)[0];
+          const maxLeft = 10 - total;
+          const count = Math.floor(Math.random() * Math.min(4, maxLeft)) + 1;
+          if (total + count > 10) break;
+          combo[color] = count;
+          total += count;
+        }
+        description = Object.entries(combo).map(([color, count]) => `${count}朵${color}花`).join("＋");
+      }
+
+      for (const c of description) {
+        resultText.appendChild(createZhuyinBlock(c));
+      }
+
+      const colorPattern = description.matchAll(/(\d+)朵(.+?)花/g);
+      for (const [, count, color] of colorPattern) {
+        for (let i = 0; i < parseInt(count); i++) {
+          const img = document.createElement("img");
+          img.src = flowerImageMap[color];
+          flowerDisplay.appendChild(img);
+        }
+      }
+
+      fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: currentID,
+          mode,
+          description,
+          time: new Date().toISOString()
+        })
+      })
+      .then(res => res.text())
+      .then(() => {
+        currentID++;
+        renderStudentID();
+        isDrawing = false;
+      })
+      .catch(err => {
+        isDrawing = false;
+        alert("上傳失敗，請稍後重試！");
+        console.error(err);
+      });
+    }
+
+    init();
+  </script>
 </body>
 </html>
