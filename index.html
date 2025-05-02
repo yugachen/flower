@@ -33,11 +33,6 @@
       background-color: #FF5151;
       color: white;
     }
-    #studentID, #resultText {
-      margin-top: 1rem;
-      font-size: 1.5rem;
-      text-align: center;
-    }
     .flowers {
       margin-top: 1rem;
       display: flex;
@@ -56,8 +51,6 @@
     <button class="easy" onclick="setMode('easy')">簡易版</button>
     <button class="hard" onclick="setMode('hard')">困難版</button>
   </div>
-  <div id="studentID"></div>
-  <div id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
 
 <script>
@@ -69,23 +62,9 @@ const flowerImageMap = {
   "黃": "黃.png",
   "紫": "紫.png"
 };
-const scriptURL = "https://script.google.com/macros/s/AKfycbx6Opi_vWo4IpRiCygCgubK2n_agQpb8I9EODh_cPhwy06RsV5wSnqtXeaQt9c53k8D/exec";
 
 let mode = "easy";
-let currentID = null;
 let isDrawing = false;
-
-async function init() {
-  try {
-    const res = await fetch(scriptURL);
-    const json = await res.json();
-    currentID = json.nextID || 1;
-  } catch (err) {
-    console.error("初始化失敗", err);
-    currentID = 1;
-  }
-  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-}
 
 function setMode(newMode) {
   if (isDrawing) return;
@@ -95,7 +74,6 @@ function setMode(newMode) {
 
 function draw() {
   isDrawing = true;
-  const resultText = document.getElementById("resultText");
   const flowerDisplay = document.getElementById("flowerDisplay");
   flowerDisplay.innerHTML = "";
 
@@ -104,7 +82,6 @@ function draw() {
     const count = Math.floor(Math.random() * 3) + 3;
     const color = colors[Math.floor(Math.random() * colors.length)];
     description = `${count}朵${color}花`;
-    resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
       img.src = flowerImageMap[color];
@@ -128,7 +105,6 @@ function draw() {
       parts.push(`${count}朵${color}花`);
     }
     description = parts.join("＋");
-    resultText.innerText = description;
     for (const [color, count] of Object.entries(combo)) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
@@ -138,33 +114,9 @@ function draw() {
     }
   }
 
-  fetch(scriptURL, {
-    method: "POST",
-    mode: "cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: currentID,
-      mode,
-      description,
-      time: new Date().toISOString()
-    })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("上傳失敗");
-    return res.text();
-  })
-  .then(() => {
-    currentID++;
-    document.getElementById("studentID").innerText = `學生編號：${currentID}`;
-    isDrawing = false;
-  })
-  .catch(() => {
-    isDrawing = false;
-    alert("上傳失敗，請稍後重試！");
-  });
+  isDrawing = false;
 }
 
-init();
 </script>
 </body>
 </html>
