@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>花朵抽題器</title>
   <style>
     body {
@@ -79,7 +79,7 @@ async function init() {
   try {
     const res = await fetch(scriptURL);
     const json = await res.json();
-    currentID = json.flowerNextID || 1; // 使用正確的欄位名稱
+    currentID = json.nextID || 1;
   } catch (err) {
     console.error("初始化失敗", err);
     currentID = 1;
@@ -140,6 +140,7 @@ function draw() {
 
   fetch(scriptURL, {
     method: "POST",
+    mode: "cors",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id: currentID,
