@@ -33,6 +33,11 @@
       background-color: #FF5151;
       color: white;
     }
+    #resultText {
+      margin-top: 1rem;
+      font-size: 1.5rem;
+      text-align: center;
+    }
     .flowers {
       margin-top: 1rem;
       display: flex;
@@ -51,6 +56,7 @@
     <button class="easy" onclick="setMode('easy')">簡易版</button>
     <button class="hard" onclick="setMode('hard')">困難版</button>
   </div>
+  <div id="resultText"></div>
   <div class="flowers" id="flowerDisplay"></div>
 
 <script>
@@ -74,14 +80,17 @@ function setMode(newMode) {
 
 function draw() {
   isDrawing = true;
+  const resultText = document.getElementById("resultText");
   const flowerDisplay = document.getElementById("flowerDisplay");
   flowerDisplay.innerHTML = "";
 
   let description = "";
+
   if (mode === "easy") {
     const count = Math.floor(Math.random() * 3) + 3;
     const color = colors[Math.floor(Math.random() * colors.length)];
     description = `${count}朵${color}花`;
+    resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
       img.src = flowerImageMap[color];
@@ -105,6 +114,7 @@ function draw() {
       parts.push(`${count}朵${color}花`);
     }
     description = parts.join("＋");
+    resultText.innerText = description;
     for (const [color, count] of Object.entries(combo)) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
@@ -116,7 +126,6 @@ function draw() {
 
   isDrawing = false;
 }
-
 </script>
 </body>
 </html>
