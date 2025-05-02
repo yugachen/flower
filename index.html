@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>花朵抽題器</title>
   <style>
     body {
@@ -84,7 +84,7 @@ async function init() {
     console.error("初始化失敗", err);
     currentID = 1;
   }
-  document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+  document.getElementById("studentID").innerText = 學生編號：${currentID};
 }
 
 function setMode(newMode) {
@@ -103,7 +103,7 @@ function draw() {
   if (mode === "easy") {
     const count = Math.floor(Math.random() * 3) + 3;
     const color = colors[Math.floor(Math.random() * colors.length)];
-    description = `${count}朵${color}花`;
+    description = ${count}朵${color}花;
     resultText.innerText = description;
     for (let i = 0; i < count; i++) {
       const img = document.createElement("img");
@@ -125,7 +125,7 @@ function draw() {
     }
     const parts = [];
     for (const [color, count] of Object.entries(combo)) {
-      parts.push(`${count}朵${color}花`);
+      parts.push(${count}朵${color}花);
     }
     description = parts.join("＋");
     resultText.innerText = description;
@@ -155,7 +155,7 @@ function draw() {
   })
   .then(() => {
     currentID++;
-    document.getElementById("studentID").innerText = `學生編號：${currentID}`;
+    document.getElementById("studentID").innerText = 學生編號：${currentID};
     isDrawing = false;
   })
   .catch(() => {
